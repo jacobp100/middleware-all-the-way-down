@@ -1,10 +1,8 @@
 const combineMiddlewares = middlewares => (store) => {
-  const propagationFunction = middlewares.map(middleware => (
-    middleware(store)
-  ));
-  const invokeMiddlewareChain = propagationFunction.reduceRight((nextFn, middleware) => (
-    middleware(nextFn)
-  ), null);
+  const invokeMiddlewareChain = middlewares.reduceRight((nextFn, middleware) => {
+    const propagationFunction = middleware(store);
+    return propagationFunction(nextFn)
+  }, null);
   return invokeMiddlewareChain;
 };
 
@@ -38,9 +36,15 @@ const createStore = ({
   middlewares = [],
   initialState = undefined,
 }) => {
-  const store = {};
+  const dispatchFunction = () => {
+    throw new Error('Cannot call dispatch before Store is ready');
+  };
 
-  store.dispatch = combineMiddlewares([
+  const store = {
+    dispatch: action => dispatchFunction(action),
+  };
+
+  dispatchFunction = combineMiddlewares([
     ...middlewares,
     subscribeMiddleware(),
     reducerMiddleware(reducer, initialState)
