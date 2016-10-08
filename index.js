@@ -36,7 +36,7 @@ const createStore = ({
   middlewares = [],
   initialState = undefined,
 }) => {
-  const dispatchFunction = () => {
+  let dispatchFunction = () => {
     throw new Error('Cannot call dispatch before Store is ready');
   };
 
