@@ -1,12 +1,12 @@
 const combineMiddlewares = middlewares => (store) => {
   const invokeMiddlewareChain = middlewares.reduceRight((nextFn, middleware) => {
     const propagationFunction = middleware(store);
-    return propagationFunction(nextFn)
+    return propagationFunction(nextFn);
   }, null);
   return invokeMiddlewareChain;
 };
 
-const reducerMiddleware = (reducer, initialState) => store => {
+const reducerMiddleware = (initialState, reducer) => (store) => {
   let state = initialState;
 
   store.getState = () => state;
@@ -14,12 +14,12 @@ const reducerMiddleware = (reducer, initialState) => store => {
   return () => (action) => { state = reducer(state, action); };
 };
 
-const subscribeMiddleware = () => store => {
+const subscribeMiddleware = () => (store) => {
   let handlers = [];
 
   store.subscribe = (cb) => {
     handlers = handlers.concat(cb);
-    return () => { handlers = handlers.filter(fn => fn !== cb) };
+    return () => { handlers = handlers.filter(fn => fn !== cb); };
   };
 
   return next => (action) => {
@@ -28,7 +28,7 @@ const subscribeMiddleware = () => store => {
     const nextState = store.getState();
 
     if (previousState !== nextState) handlers.forEach(cb => cb());
-  }
+  };
 };
 
 const createStore = ({
@@ -37,7 +37,7 @@ const createStore = ({
   initialState = undefined,
 }) => {
   let dispatchFunction = () => {
-    throw new Error('Cannot call dispatch before Store is ready');
+    throw new Error('Cannot call dispatch before store is ready');
   };
 
   const store = {
@@ -47,7 +47,7 @@ const createStore = ({
   dispatchFunction = combineMiddlewares([
     ...middlewares,
     subscribeMiddleware(),
-    reducerMiddleware(reducer, initialState)
+    reducerMiddleware(initialState, reducer),
   ])(store);
 
   store.dispatch({ type: '@@redux/INIT' });
@@ -55,25 +55,4 @@ const createStore = ({
   return store;
 };
 
-// DEMO
-
-const reducer = (state = 0, action) => {
-  if (action.type === 'INCREMENT') {
-    return state + 1
-  } else if (action.type === 'DECREMENT') {
-    return state - 1;
-  }
-  return state;
-}
-const store = createStore({ reducer });
-
-store.subscribe(() => {
-  console.log('NEW STATE');
-});
-console.log('state:', store.getState());
-store.dispatch({ type: 'INCREMENT' });
-console.log('state:', store.getState());
-store.dispatch({ type: 'INCREMENT' });
-console.log('state:', store.getState());
-store.dispatch({ type: 'DECREMENT' });
-console.log('state:', store.getState());
+module.exports.createStore = createStore;
